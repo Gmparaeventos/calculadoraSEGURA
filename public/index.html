@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora AWS - Tarea 03</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #232f3e, #37475a);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    color: #232f3e;
+  }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.3);
+    padding: 32px;
+    width: 380px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; color: #232f3e; }
+  p.subtitle { margin: 0 0 20px; color: #6b7280; font-size: 13px; }
+  label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 4px; margin-top: 12px; }
+  input, select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 15px;
+  }
+  button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    background: #ff9900;
+    border: none;
+    border-radius: 6px;
+    color: #232f3e;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  button:hover { background: #e88b00; }
+  .resultado {
+    margin-top: 20px;
+    padding: 14px;
+    border-radius: 6px;
+    background: #f3f4f6;
+    font-size: 15px;
+    min-height: 20px;
+    word-break: break-word;
+  }
+  .resultado.error { background: #fee2e2; color: #b91c1c; }
+  .instancia {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 12px;
+    color: #6b7280;
+    border-top: 1px dashed #d1d5db;
+    padding-top: 10px;
+  }
+  .instancia b { color: #232f3e; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🧮 Calculadora de 4 Operaciones</h1>
+  <p class="subtitle">Tarea 03 — Arquitectura segura, dinámica y escalable en AWS</p>
+
+  <label for="a">Valor A</label>
+  <input type="number" id="a" placeholder="Ej. 10">
+
+  <label for="op">Operación</label>
+  <select id="op">
+    <option value="suma">Suma (+)</option>
+    <option value="resta">Resta (−)</option>
+    <option value="multiplicacion">Multiplicación (×)</option>
+    <option value="division">División (÷)</option>
+  </select>
+
+  <label for="b">Valor B</label>
+  <input type="number" id="b" placeholder="Ej. 5">
+
+  <button onclick="calcular()">Calcular</button>
+
+  <div class="resultado" id="resultado">El resultado aparecerá aquí.</div>
+
+  <div class="instancia">
+    Servidor respondiendo desde: <b id="instancia">cargando...</b>
+    <br>(Actualiza la página varias veces para ver cómo el Load Balancer alterna entre instancias)
+  </div>
+</div>
+
+<script>
+async function cargarInstancia() {
+  try {
+    const r = await fetch('/api/instance');
+    const d = await r.json();
+    document.getElementById('instancia').textContent = d.instance;
+  } catch (e) {
+    document.getElementById('instancia').textContent = 'no disponible';
+  }
+}
+
+async function calcular() {
+  const a = document.getElementById('a').value;
+  const b = document.getElementById('b').value;
+  const operacion = document.getElementById('op').value;
+  const resultadoDiv = document.getElementById('resultado');
+
+  resultadoDiv.classList.remove('error');
+  resultadoDiv.textContent = 'Calculando...';
+
+  try {
+    const r = await fetch('/api/calcular', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ operacion, a, b })
+    });
+    const d = await r.json();
+
+    if (!r.ok) {
+      resultadoDiv.classList.add('error');
+      resultadoDiv.textContent = 'Error: ' + d.error;
+      return;
+    }
+
+    resultadoDiv.textContent = `Resultado: ${d.resultado}`;
+    document.getElementById('instancia').textContent = d.instancia;
+  } catch (e) {
+    resultadoDiv.classList.add('error');
+    resultadoDiv.textContent = 'Error de conexión con el servidor.';
+  }
+}
+
+cargarInstancia();
+</script>
+</body>
+</html>
